@@ -151,24 +151,27 @@ export async function POST(request: Request) {
                // Fallback to Algorithmic QA if Gemini returns empty
                const fallbackText = allSummaries || "";
                const answer = extractAnswer(query, fallbackText, 2);
-               responseText = `Gemini is currently busy.\n\nAlgorithmic Fallback: ${answer}`;
+               responseText = `Gemini is currently busy (Empty response).\n\nAlgorithmic Fallback: ${answer}`;
             }
           }
         } catch (e: any) {
           console.warn(`[Info] Gemini API unavailable (${e?.status || 'Error'}), gracefully falling back to algorithmic search. Error details:`, e?.message || e);
           const fallbackText = allSummaries || "";
           const answer = extractAnswer(query, fallbackText, 2);
-          responseText = `Gemini is currently busy.\n\nAlgorithmic Fallback found this:\n"...${answer}..."`;
+          const keySnippet = apiKey ? `${apiKey.substring(0, 6)}... (length: ${apiKey.length})` : "None";
+          responseText = `Gemini is currently busy.\nError Details: ${e?.message || e}\nAPI Key Status: ${keySnippet}\n\nAlgorithmic Fallback found this:\n"...${answer}..."`;
         }
       } else {
         // Fallback to algorithmic NLP
         console.warn("[Info] No Gemini API key found, falling back to algorithmic search.");
         const fallbackText = allSummaries || "";
         const answer = extractAnswer(query, fallbackText, 2);
+        const allEnvKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes("gemini"));
+        const debugMsg = `[No Gemini API key detected. Available GEMINI env vars: ${allEnvKeys.join(", ") || "none"}]`;
         if (answer.startsWith("I could not") || answer.startsWith("I couldn't")) {
-           responseText = answer;
+           responseText = `${answer}\n\n${debugMsg}`;
         } else {
-           responseText = `Based on the text, I found this:\n\n"...${answer}..."`;
+           responseText = `Based on the text, I found this:\n\n"...${answer}..."\n\n${debugMsg}`;
         }
       }
     }
