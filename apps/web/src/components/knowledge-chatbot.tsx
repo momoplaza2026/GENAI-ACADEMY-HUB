@@ -121,8 +121,12 @@ export function KnowledgeChatbot({ activePaper, papers = [] }: { activePaper: Re
           {/* Header */}
           <div className="flex items-center justify-between p-4 bg-slate-800 border-b border-slate-700 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                <Bot className="w-5 h-5" />
+              <div className="w-9 h-9 bg-slate-950 border border-yellow-400/50 rounded-xl flex items-center justify-center overflow-hidden p-1 shadow-md shadow-yellow-500/10">
+                <img 
+                  src="/logo-mark.png" 
+                  alt="GenAI Academy & Hub Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
               <div>
                 <h3 className="font-bold text-slate-100 text-sm">Knowledge Center</h3>
@@ -150,8 +154,12 @@ export function KnowledgeChatbot({ activePaper, papers = [] }: { activePaper: Re
           <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
             {!activePaper ? (
               <div className="flex flex-col items-center justify-center flex-1 text-center p-6 space-y-3 my-auto animate-in fade-in duration-300">
-                <div className="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center border border-amber-500/20 mb-2">
-                  <Bot className="w-6 h-6 animate-pulse" />
+                <div className="w-12 h-12 bg-slate-950 border border-yellow-400/50 rounded-2xl flex items-center justify-center overflow-hidden p-2 shadow-lg shadow-yellow-500/10 mb-2">
+                  <img 
+                    src="/logo-mark.png" 
+                    alt="GenAI Academy & Hub Logo" 
+                    className="w-full h-full object-contain animate-pulse" 
+                  />
                 </div>
                 <h4 className="font-bold text-slate-200 text-sm">No PDF Selected</h4>
                 <p className="text-xs text-slate-400 max-w-[240px]">

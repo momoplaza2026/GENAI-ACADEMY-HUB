@@ -9,8 +9,10 @@ import { PptModal } from "@/components/ppt-modal";
 import { ArchitectureModal } from "@/components/architecture-modal";
 import { KnowledgeChatbot } from "@/components/knowledge-chatbot";
 import { useAudio } from "@/components/audio-provider";
-import { Volume2, Download, Loader2, Clipboard, Database, Code2, Presentation, Library, LayoutTemplate, Activity, Settings2, AlertTriangle, Sparkles, Terminal, HelpCircle } from "lucide-react";
+import { Volume2, Download, Loader2, Clipboard, Database, Code2, Presentation, Library, LayoutTemplate, Activity, Settings2, AlertTriangle, Sparkles, Terminal, HelpCircle, X } from "lucide-react";
 import type { ResearchPaper, Course } from "@/lib/types";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 export type SelectedDocument = {
   kind: "paper";
@@ -125,9 +127,24 @@ export default function Home() {
       const params = new URLSearchParams();
       if (type && type !== "all") params.set("type", type);
       if (query) params.set("q", query);
+      
+      // Fetch local matches instantly (Fast path)
       const res = await fetch(`/api/courses?${params.toString()}`);
       const data = await res.json();
       setCourses(data.courses || []);
+
+      // If a search query is active, request AI recommendations in the background
+      if (query) {
+        params.set("ai", "true");
+        fetch(`/api/courses?${params.toString()}`)
+          .then((res) => res.json())
+          .then((bgData) => {
+            if (bgData.courses && bgData.courses.length > 0) {
+              setCourses(bgData.courses);
+            }
+          })
+          .catch((err) => console.warn("Background AI courses query failed:", err));
+      }
     } catch (err) {
       console.error("Failed to fetch courses:", err);
     }
@@ -159,9 +176,11 @@ export default function Home() {
       setPaperPage(0);
       setHasMorePapers(true);
       if (query.trim()) {
-        await Promise.all([fetchPapers(query, 0), fetchCourses(undefined, query)]);
+        fetchPapers(query, 0);
+        fetchCourses(undefined, query);
       } else {
-        await Promise.all([fetchPapers(undefined, 0), fetchCourses()]);
+        fetchPapers(undefined, 0);
+        fetchCourses();
       }
     },
     [fetchPapers, fetchCourses]
@@ -316,68 +335,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-[100dvh] md:h-screen overflow-hidden bg-background">
-      {/* Global Navbar Header */}
-      <header className="h-16 border-b border-slate-800/80 bg-slate-950 flex items-center justify-between px-6 shrink-0 z-30 select-none">
-        {/* Left Side: Logo & Brand */}
-        <div className="flex items-center gap-3.5">
-          <div className="relative group/logo flex items-center justify-center shrink-0">
-            {/* Animated yellow glow rings */}
-            <div className="absolute inset-0 rounded-full border border-yellow-400/20 scale-120 group-hover/logo:scale-135 group-hover/logo:border-yellow-400/50 group-hover/logo:rotate-180 transition-all duration-700 ease-out pointer-events-none" />
-            <div className="absolute inset-0 rounded-full border border-dashed border-amber-400/40 scale-110 group-hover/logo:scale-120 group-hover/logo:border-amber-400 group-hover/logo:rotate-90 transition-all duration-500 ease-out pointer-events-none" />
-            
-            {/* Logo container with yellow ring */}
-            <div className="w-10 h-10 rounded-full bg-slate-900 border-2 border-yellow-400/80 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-yellow-500/10 group-hover/logo:border-yellow-400 group-hover/logo:shadow-yellow-500/30 transition-all duration-300">
-              <img 
-                src="/logo-mark.png" 
-                alt="GenAI Academy & Hub Logo" 
-                className="w-full h-full object-contain group-hover/logo:scale-110 transition-transform duration-300" 
-              />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm font-extrabold tracking-wider bg-gradient-to-r from-violet-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              GENAI ACADEMY & HUB
-            </span>
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">
-              AI-Powered Research Workspace
-            </span>
-          </div>
-        </div>
-
-        {/* Middle Side: Quick Stats (Hidden on Mobile) */}
-        <div className="hidden md:flex items-center gap-6 text-xs text-slate-400">
-          <div className="flex items-center gap-2 bg-slate-900/40 px-3 py-1.5 rounded-full border border-slate-800/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-            <span>Library: <strong>{papers.length} Papers</strong></span>
-          </div>
-          <div className="flex items-center gap-2 bg-slate-900/40 px-3 py-1.5 rounded-full border border-slate-800/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            <span>Courses: <strong>{courses.length} Active</strong></span>
-          </div>
-        </div>
-
-        {/* Right Side: Navigation controls / github */}
-        <div className="flex items-center gap-3">
-          <a
-            href="https://github.com/samprit-ghosh/GENAI-ACADEMY-HUB"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 rounded-lg"
-          >
-            <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-            </svg>
-            <span className="hidden sm:inline">GitHub</span>
-          </a>
-          <button
-            onClick={() => setClipboardWarning({ isOpen: true, type: "help" })}
-            className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center border border-slate-800 transition-colors cursor-pointer"
-            title="Quick User Guide"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
+      <Header
+        papersCount={papers.length}
+        coursesCount={courses.length}
+        onOpenHelp={() => setClipboardWarning({ isOpen: true, type: "help" })}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Knowledge & Media Radar */}
@@ -816,6 +778,14 @@ export default function Home() {
       {clipboardWarning.isOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="relative w-full max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 text-slate-100 mx-4">
+            {/* Close Button in Top-Right */}
+            <button
+              onClick={() => setClipboardWarning(prev => ({ ...prev, isOpen: false }))}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-800 cursor-pointer z-10"
+              title="Close Modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <div className="flex items-start gap-4">
               <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center border ${
                 clipboardWarning.type === "help"
@@ -939,33 +909,7 @@ export default function Home() {
           <span className="text-[10px] font-medium uppercase tracking-wider">Insights</span>
         </button>
       </div> {/* Correctly closes the Mobile Bottom Navigation container */}
-      
-      {/* Global Footer (Hidden on Mobile) */}
-      <footer className="hidden md:flex h-12 border-t border-slate-800 bg-slate-950 items-center justify-between px-8 shrink-0 z-20 text-[11px] text-slate-500 select-none font-sans">
-        <div className="flex items-center gap-1">
-          <span>© 2026 GenAI Academy & Hub. Powered by</span>
-          <span className="font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800/60 flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-indigo-400" />
-            Gemini 3.5 Flash
-          </span>
-          <span>&</span>
-          <span className="font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800/60">
-            Next.js
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-slate-400 font-medium">Gateway: Connected</span>
-          </div>
-          <div className="w-px h-3 bg-slate-800" />
-          <span className="hover:text-slate-400 transition-colors">v1.2.0</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

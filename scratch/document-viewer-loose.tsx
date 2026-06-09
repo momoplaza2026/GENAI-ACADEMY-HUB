@@ -183,18 +183,15 @@ export function DocumentViewer({
       document.exitFullscreen();
     }
   };
-  if (!doc) {
-    return (
-      <div 
-        className="flex-1 relative bg-cover bg-center bg-no-repeat overflow-hidden"
+
+  // ─── Empty State (User Guide) ───────────────────────�      <div 
+        className="flex-1 flex flex-col items-center justify-start p-8 pt-8 sm:pt-12 bg-cover bg-center bg-no-repeat overflow-y-auto relative"
         style={{ backgroundImage: "url('/indian-flag-bg.png')" }}
       >
         {/* Dark overlay for premium readability */}
-        <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[0.5px] pointer-events-none" />
+        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[1.5px] pointer-events-none" />
 
-        {/* Scrollable content container */}
-        <div className="absolute inset-0 overflow-y-auto flex flex-col items-center justify-start p-8 pt-8 sm:pt-12">
-          <div className="max-w-2xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative z-10">
+        <div className="max-w-2xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative z-10">
           
           <div className="text-center space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-4">
@@ -223,49 +220,53 @@ export function DocumentViewer({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
             {/* Guide Cards */}
-            <div className="p-5 rounded-2xl bg-slate-950/85 border border-indigo-500/30 hover:border-indigo-400/60 shadow-xl transition-all duration-300 group/card h-full flex flex-col">
+            <div className="p-5 rounded-2xl bg-slate-950/85 border border-indigo-500/30 hover:border-indigo-400/60 shadow-xl transition-all duration-300 group/card">
               <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-4 transition-transform group-hover/card:scale-110">
                 <BookOpen className="w-5 h-5 text-indigo-400" />
               </div>
               <h3 className="font-bold text-indigo-300 mb-2 text-base">1. Explore Research</h3>
-              <p className="text-sm text-slate-300 leading-relaxed font-normal flex-1">
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
                 Scroll through the left sidebar to discover the latest AI/ML papers from Arxiv. Click any paper to read the PDF.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-950/85 border border-purple-500/30 hover:border-purple-400/60 shadow-xl transition-all duration-300 group/card h-full flex flex-col">
+            <div className="p-5 rounded-2xl bg-slate-950/85 border border-purple-500/30 hover:border-purple-400/60 shadow-xl transition-all duration-300 group/card">
               <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4 transition-transform group-hover/card:scale-110">
                 <Presentation className="w-5 h-5 text-purple-400" />
               </div>
               <h3 className="font-bold text-purple-300 mb-2 text-base">2. Watch PPTs</h3>
-              <p className="text-sm text-slate-300 leading-relaxed font-normal flex-1">
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
                 Click the <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold mx-1"><Presentation className="w-3 h-3"/> Watch PPT</span> button in the top bar to view a beautiful animated presentation of any paper.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-950/85 border border-emerald-500/30 hover:border-emerald-400/60 shadow-xl transition-all duration-300 group/card h-full flex flex-col">
+            <div className="p-5 rounded-2xl bg-slate-950/85 border border-emerald-500/30 hover:border-emerald-400/60 shadow-xl transition-all duration-300 group/card">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-4 transition-transform group-hover/card:scale-110">
                 <Volume2 className="w-5 h-5 text-emerald-400" />
               </div>
               <h3 className="font-bold text-emerald-300 mb-2 text-base">3. AI Audio Reader</h3>
-              <p className="text-sm text-slate-300 leading-relaxed font-normal flex-1">
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
                 Highlight text in the PDF, press Ctrl+C, then click <span className="text-emerald-400 font-medium">Read Copied Text</span> to hear an AI read and explain it to you.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-950/85 border border-orange-500/30 hover:border-orange-400/60 shadow-xl transition-all duration-300 group/card h-full flex flex-col">
+            <div className="p-5 rounded-2xl bg-slate-950/85 border border-orange-500/30 hover:border-orange-400/60 shadow-xl transition-all duration-300 group/card">
               <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center mb-4 transition-transform group-hover/card:scale-110">
                 <ArrowLeftRight className="w-5 h-5 text-orange-400" />
               </div>
               <h3 className="font-bold text-orange-300 mb-2 text-base">4. Compare Papers</h3>
-              <p className="text-sm text-slate-300 leading-relaxed font-normal flex-1">
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
                 Toggle <span className="text-orange-400 font-medium">Compare Mode</span> to view two papers side-by-side with synchronized scrolling and generate AI comparison reports.
               </p>
             </div>
           </div>
+        </div>ing and generate AI comparison reports.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
     );
   }
 

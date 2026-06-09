@@ -1,0 +1,40 @@
+{
+  "nlp": [
+    {
+      "id": "dyn-yt-nlp-1",
+      "title": "Natural Language Processing (NLP) Tutorial For Beginners",
+      "creator": "freeCodeCamp.org",
+      "platform": "YouTube",
+      "type": "free",
+      "url": "https://www.youtube.com/results?search_query=freecodecamp+nlp+tutorial",
+      "description": "Dive into the foundations of Natural Language Processing with this comprehensive beginner's guide. Learn essential concepts like text preprocessing, tokenization, stemming, lemmatization, and basic NLP models to kickstart your journey."
+    },
+    {
+      "id": "dyn-yt-nlp-2",
+      "title": "Hugging Face Transformers Course",
+      "creator": "Hugging Face",
+      "platform": "YouTube",
+      "type": "free",
+      "url": "https://www.youtube.com/results?search_query=huggingface+transformers+course",
+      "description": "Master the state-of-the-art Transformer models for various NLP tasks directly from the experts at Hugging Face. This playlist provides a practical, hands-on approach to using their library for text classification, question answering, and more."
+    },
+    {
+      "id": "dyn-coursera-nlp-1",
+      "title": "Natural Language Processing Specialization",
+      "creator": "DeepLearning.AI",
+      "platform": "Coursera",
+      "type": "paid",
+      "url": "https://www.coursera.org/specializations/natural-language-processing",
+      "description": "Unlock the power of human language with this world-class specialization from DeepLearning.AI. Progress through traditional NLP methods to advanced deep learning architectures for cutting-edge text analysis and generation."
+    },
+    {
+      "id": "dyn-udemy-nlp-1",
+      "title": "NLP - Natural Language Processing with Python",
+      "creator": "Jose Portilla, Pierian Training",
+      "platform": "Udemy",
+      "type": "paid",
+      "url": "https://www.udemy.com/courses/search/?q=nlp+natural+language+processing+python",
+      "description": "Gain practical expertise in NLP by building real-world projects using Python and popular libraries like NLTK and SpaCy. This course covers everything from text classification and sentiment analysis to topic modeling and chatbots."
+    }
+  ]
+}
