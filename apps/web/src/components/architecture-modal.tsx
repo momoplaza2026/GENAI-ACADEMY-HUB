@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Network, Download } from "lucide-react";
+import { X, Network, Download, Sparkles } from "lucide-react";
 import mermaid from "mermaid";
 import type { SelectedDocument } from "@/app/page-client";
 
@@ -158,9 +158,28 @@ export function ArchitectureModal({ document: doc, onClose }: ArchitectureModalP
               dangerouslySetInnerHTML={{ __html: svgContent }} 
             />
           ) : (
-            <div className="animate-pulse text-slate-400 font-medium flex flex-col items-center justify-center gap-4 relative z-10">
-              <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
-              Generating Logical Architecture Diagram...
+            <div className="flex flex-col items-center justify-center gap-6 relative z-10">
+              {/* Glowing Logo Loader */}
+              <div className="relative w-24 h-24 flex items-center justify-center">
+                {/* Outer glowing rings */}
+                <div className="absolute inset-0 rounded-full border border-yellow-400/20 animate-[spin_8s_linear_infinite] pointer-events-none scale-135" />
+                <div className="absolute inset-0 rounded-full border border-dashed border-indigo-400/40 animate-[spin_4s_linear_infinite_reverse] pointer-events-none scale-115" />
+                <div className="absolute inset-0 rounded-full bg-indigo-500/10 blur-xl scale-75 animate-pulse" />
+                
+                {/* Logo mark with yellow ring */}
+                <div className="w-12 h-12 rounded-full bg-slate-900 border-2 border-yellow-400/80 flex items-center justify-center overflow-hidden shadow-md shadow-yellow-500/10 animate-bounce p-1.5">
+                  <img 
+                    src="/logo-mark.png" 
+                    alt="Logo" 
+                    className="w-full h-full object-contain" 
+                  />
+                </div>
+              </div>
+              
+              <p className="font-bold text-slate-400 tracking-widest uppercase animate-pulse flex items-center justify-center gap-1.5 text-[10px] sm:text-xs mt-4">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                Generating Logical Architecture Diagram...
+              </p>
             </div>
           )}
         </div>

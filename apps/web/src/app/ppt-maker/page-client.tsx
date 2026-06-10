@@ -2171,12 +2171,20 @@ export default function PptMakerClient() {
       {isGenerating && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl flex flex-col items-center justify-center z-[200] animate-in fade-in duration-300">
           <div className="relative flex flex-col items-center max-w-md p-8 text-center">
-            {/* Glowing Neon Ring Loader */}
-            <div className="relative w-24 h-24 mb-8">
-              <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
-              <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-purple-500 animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
+            {/* Glowing Logo Loader */}
+            <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
+              {/* Outer glowing rings */}
+              <div className="absolute inset-0 rounded-full border border-yellow-400/20 animate-[spin_8s_linear_infinite] pointer-events-none scale-135" />
+              <div className="absolute inset-0 rounded-full border border-dashed border-indigo-400/40 animate-[spin_4s_linear_infinite_reverse] pointer-events-none scale-115" />
+              <div className="absolute inset-0 rounded-full bg-indigo-500/10 blur-xl scale-75 animate-pulse" />
+              
+              {/* Logo mark with yellow ring */}
+              <div className="w-14 h-14 rounded-full bg-slate-900 border-2 border-yellow-400/80 flex items-center justify-center overflow-hidden shadow-md shadow-yellow-500/10 animate-bounce p-2">
+                <img 
+                  src="/logo-mark.png" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
             </div>
 
