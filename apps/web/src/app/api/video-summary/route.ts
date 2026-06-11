@@ -93,38 +93,64 @@ export async function GET(request: Request) {
   try {
     let transcript: any[] = [];
     let fetchedViaSupadata = false;
+    let fetchedLocally = false;
 
-    if (process.env.SUPADATA_API_KEY) {
+    const keysString = process.env.SUPADATA_API_KEYS || process.env.SUPADATA_API_KEY || "";
+    const apiKeys = keysString.split(",").map(k => k.trim()).filter(Boolean);
+    const isProduction = !!(process.env.VERCEL || process.env.NODE_ENV === "production");
+
+    if (!isProduction) {
+      // Local development: prioritize the free normal scraper first to conserve credits
       try {
-        console.log(`[Supadata] Fetching transcript for ${videoId}...`);
-        const targetUrl = `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(url)}`;
-        const res = await fetch(targetUrl, {
-          headers: {
-            "x-api-key": process.env.SUPADATA_API_KEY,
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.content)) {
-            transcript = data.content.map((item: any) => ({
-              text: item.text,
-              offset: item.offset || 0,
-              duration: item.duration || 0,
-            }));
-            fetchedViaSupadata = true;
-            console.log(`[Supadata] Successfully fetched transcript for ${videoId}.`);
-          }
-        } else {
-          const errorData = await res.json().catch(() => ({}));
-          console.warn("[Supadata] API request failed, falling back to local scraping:", errorData.error || res.status);
-        }
+        console.log(`[Local Scraper] Running free local scraper for ${videoId}...`);
+        const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
+        transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
+        fetchedLocally = true;
+        console.log(`[Local Scraper] Successfully fetched transcript for ${videoId}.`);
       } catch (e: any) {
-        console.warn("[Supadata] Error, falling back to local scraping:", e.message);
+        console.warn("[Local Scraper] Free local scraper failed, trying Supadata fallback:", e.message);
       }
     }
 
-    if (!fetchedViaSupadata) {
+    // Try Supadata if:
+    // 1. In production (where Supadata is prioritized to bypass Vercel IP blocks)
+    // 2. Or if local scraper failed and we haven't successfully fetched it yet
+    if (!fetchedLocally && apiKeys.length > 0) {
+      for (const apiKey of apiKeys) {
+        try {
+          console.log(`[Supadata] Fetching transcript for ${videoId} using key ending in ...${apiKey.slice(-6)}`);
+          const targetUrl = `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(url)}`;
+          const res = await fetch(targetUrl, {
+            headers: {
+              "x-api-key": apiKey,
+            },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.content)) {
+              transcript = data.content.map((item: any) => ({
+                text: item.text,
+                offset: item.offset || 0,
+                duration: item.duration || 0,
+              }));
+              fetchedViaSupadata = true;
+              console.log(`[Supadata] Successfully fetched transcript for ${videoId}.`);
+              break;
+            }
+          } else {
+            const errorData = await res.json().catch(() => ({}));
+            console.warn(`[Supadata] Request failed with status ${res.status} for key ending in ...${apiKey.slice(-6)}:`, errorData.error || res.status);
+          }
+        } catch (e: any) {
+          console.warn(`[Supadata] Error using key ending in ...${apiKey.slice(-6)}:`, e.message);
+        }
+      }
+    }
+
+    // Fallback: If in production and Supadata failed, try the local scraper via proxy
+    if (!fetchedViaSupadata && !fetchedLocally) {
+      console.log(`[Production Scraper] Running scraper fallback for ${videoId}...`);
       const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
       transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
     }
