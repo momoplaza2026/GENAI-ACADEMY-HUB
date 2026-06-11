@@ -23,7 +23,7 @@ export function Footer() {
   useEffect(() => {
     async function fetchStocks() {
       try {
-        const res = await fetch("/api/stocks");
+        const res = await fetch(`${window.location.origin}/api/stocks`);
         if (res.ok) {
           const payload = await res.json();
           if (payload.success && payload.data) {

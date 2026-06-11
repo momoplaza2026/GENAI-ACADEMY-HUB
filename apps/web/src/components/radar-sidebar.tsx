@@ -306,8 +306,6 @@ export function RadarSidebar({
             ) : (
               filteredCourses.map((c) => {
                 const isSelected = selectedDocument?.kind === "course" && selectedDocument.course.id === c.id;
-                const isCompared = compareDocument?.kind === "course" && compareDocument.course.id === c.id;
-                const isActive = isSelected || isCompared;
                 const isFree = c.type === "free";
 
                 return (
@@ -317,12 +315,10 @@ export function RadarSidebar({
                       onSelectDocument({ kind: "course", course: c })
                     }
                     className={`w-full text-left p-3 rounded-lg border transition-all group ${
-                      isActive
-                        ? isSelected
-                          ? isFree
-                            ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.15)] ring-1 ring-green-500/30"
-                            : "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.15)] ring-1 ring-purple-500/30"
-                          : "border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/30"
+                      isSelected
+                        ? isFree
+                          ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.15)] ring-1 ring-green-500/30"
+                          : "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.15)] ring-1 ring-purple-500/30"
                         : isFree
                           ? "border-transparent hover:border-green-500/30 hover:bg-green-500/5"
                           : "border-transparent hover:border-purple-500/30 hover:bg-purple-500/5"
@@ -331,20 +327,14 @@ export function RadarSidebar({
                     <div className="flex items-start gap-2.5">
                       <div
                         className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                          isActive
-                            ? isSelected
-                              ? isFree ? "bg-green-500/20" : "bg-purple-500/20"
-                              : "bg-blue-500/20"
+                          isSelected
+                            ? isFree ? "bg-green-500/20" : "bg-purple-500/20"
                             : isFree ? "bg-green-500/10" : "bg-purple-500/10"
                         }`}
                       >
                         <GraduationCap
                           className={`w-4 h-4 ${
-                            isActive
-                              ? isSelected
-                                ? isFree ? "text-green-400" : "text-purple-400"
-                                : "text-blue-400"
-                              : isFree ? "text-green-400" : "text-purple-400"
+                            isFree ? "text-green-400" : "text-purple-400"
                           }`}
                         />
                       </div>
@@ -352,10 +342,8 @@ export function RadarSidebar({
                         <div className="flex items-center gap-2 mb-1">
                           <span
                             className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm shrink-0 ${
-                              isActive
-                                ? isSelected
-                                  ? isFree ? "bg-green-500/30 text-green-300" : "bg-purple-500/30 text-purple-300"
-                                  : "bg-blue-500/30 text-blue-300"
+                              isSelected
+                                ? isFree ? "bg-green-500/30 text-green-300" : "bg-purple-500/30 text-purple-300"
                                 : isFree ? "bg-green-500/20 text-green-400" : "bg-purple-500/20 text-purple-400"
                             }`}
                           >
@@ -367,7 +355,7 @@ export function RadarSidebar({
                         </div>
                         <span
                           className={`text-sm font-medium transition-colors block truncate ${
-                            isActive ? "text-foreground" : isFree ? "group-hover:text-green-400" : "group-hover:text-purple-400"
+                            isSelected ? "text-foreground" : isFree ? "group-hover:text-green-400" : "group-hover:text-purple-400"
                           }`}
                         >
                           {c.title}
@@ -376,7 +364,7 @@ export function RadarSidebar({
                           {c.creator}
                         </span>
                       </div>
-                      <ExternalLink className={`w-3.5 h-3.5 shrink-0 mt-1 ${isActive ? "text-primary/50" : "text-muted-foreground/30"}`} />
+                      <ExternalLink className={`w-3.5 h-3.5 shrink-0 mt-1 ${isSelected ? "text-primary/50" : "text-muted-foreground/30"}`} />
                     </div>
                   </button>
                 );

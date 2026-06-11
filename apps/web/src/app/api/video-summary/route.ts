@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
-import { getYoutubeVideoId } from "@/lib/youtube";
+import { getYoutubeVideoId, getYoutubePlaylistId } from "@/lib/youtube";
 import https from "https";
 import { customFetch } from "@/lib/proxy-fetch";
 
@@ -70,10 +70,89 @@ async function translateTranscript(items: any[]): Promise<any[]> {
   }));
 }
 
+function parsePlaylistHtml(html: string): { id: string; title: string }[] {
+  const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/) || html.match(/ytInitialData\s*=\s*({.+?});/);
+  if (match) {
+    try {
+      const data = JSON.parse(match[1]);
+      
+      const videos: { id: string; title: string }[] = [];
+      const seenIds = new Set<string>();
+
+      function traverse(obj: any) {
+        if (!obj || typeof obj !== "object") return;
+        if (Array.isArray(obj)) {
+          obj.forEach(item => traverse(item));
+        } else {
+          if (obj.lockupViewModel) {
+            const videoId = obj.lockupViewModel.rendererContext?.commandContext?.onTap?.innertubeCommand?.watchEndpoint?.videoId;
+            const title = obj.lockupViewModel.metadata?.lockupMetadataViewModel?.title?.content;
+            if (videoId && title && !seenIds.has(videoId)) {
+              seenIds.add(videoId);
+              videos.push({ id: videoId, title });
+            }
+          }
+          if (obj.playlistVideoRenderer) {
+            const videoId = obj.playlistVideoRenderer.videoId;
+            const title = obj.playlistVideoRenderer.title?.runs?.[0]?.text || obj.playlistVideoRenderer.title?.simpleText;
+            if (videoId && title && !seenIds.has(videoId)) {
+              seenIds.add(videoId);
+              videos.push({ id: videoId, title });
+            }
+          }
+          for (const key in obj) {
+            traverse(obj[key]);
+          }
+        }
+      }
+
+      traverse(data);
+      if (videos.length > 0) {
+        return videos;
+      }
+    } catch (e) {
+      console.error("Failed to parse ytInitialData JSON:", e);
+    }
+  }
+
+  const videos: { id: string; title: string }[] = [];
+  const seenIds = new Set<string>();
+  const watchRegex = /watch\?v=([a-zA-Z0-9_-]{11})/g;
+  let m;
+  while ((m = watchRegex.exec(html)) !== null) {
+    const videoId = m[1];
+    if (!seenIds.has(videoId)) {
+      seenIds.add(videoId);
+      videos.push({ id: videoId, title: `Video ${videos.length + 1}` });
+    }
+  }
+  return videos;
+}
+
+function getVideosFromPlaylist(playlistId: string): Promise<{ id: string; title: string }[]> {
+  return new Promise((resolve, reject) => {
+    const url = `https://www.youtube.com/playlist?list=${playlistId}`;
+    https.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        const videos = parsePlaylistHtml(data);
+        resolve(videos);
+      });
+    }).on('error', reject);
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
   const checkOnly = searchParams.get("check") === "true";
+  const playlistOnly = searchParams.get("playlist") === "true";
 
   if (!url) {
     return NextResponse.json(
@@ -83,11 +162,48 @@ export async function GET(request: Request) {
   }
 
   const videoId = getYoutubeVideoId(url);
-  if (!videoId) {
+  const playlistId = getYoutubePlaylistId(url);
+
+  if (!videoId && !playlistId) {
     return NextResponse.json(
-      checkOnly ? { extractable: false } : { error: "The provided URL is not a direct YouTube video. Transcripts can only be extracted from single videos." },
+      checkOnly ? { extractable: false } : { error: "The provided URL is not a valid YouTube video or playlist URL." },
       { status: checkOnly ? 200 : 400 }
     );
+  }
+
+  if (playlistOnly && playlistId) {
+    try {
+      const videos = await getVideosFromPlaylist(playlistId);
+      return NextResponse.json({ videos });
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: e.message || "Failed to fetch playlist videos" },
+        { status: 500 }
+      );
+    }
+  }
+
+  let targetVideoId = videoId;
+  if (!targetVideoId && playlistId) {
+    try {
+      const playlistVideos = await getVideosFromPlaylist(playlistId);
+      if (playlistVideos.length > 0) {
+        targetVideoId = playlistVideos[0].id;
+      }
+    } catch (e) {
+      console.warn("Failed to get playlist videos:", e);
+    }
+  }
+
+  if (!targetVideoId) {
+    return NextResponse.json(
+      checkOnly ? { extractable: false } : { error: "Could not find a video to extract transcripts from." },
+      { status: checkOnly ? 200 : 400 }
+    );
+  }
+
+  if (checkOnly) {
+    return NextResponse.json({ extractable: true });
   }
 
   try {
@@ -102,11 +218,11 @@ export async function GET(request: Request) {
     if (!isProduction) {
       // Local development: prioritize the free normal scraper first to conserve credits
       try {
-        console.log(`[Local Scraper] Running free local scraper for ${videoId}...`);
+        console.log(`[Local Scraper] Running free local scraper for ${targetVideoId}...`);
         const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
-        transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
+        transcript = await YoutubeTranscript.fetchTranscript(targetVideoId, config);
         fetchedLocally = true;
-        console.log(`[Local Scraper] Successfully fetched transcript for ${videoId}.`);
+        console.log(`[Local Scraper] Successfully fetched transcript for ${targetVideoId}.`);
       } catch (e: any) {
         console.warn("[Local Scraper] Free local scraper failed, trying Supadata fallback:", e.message);
       }
@@ -118,8 +234,8 @@ export async function GET(request: Request) {
     if (!fetchedLocally && apiKeys.length > 0) {
       for (const apiKey of apiKeys) {
         try {
-          console.log(`[Supadata] Fetching transcript for ${videoId} using key ending in ...${apiKey.slice(-6)}`);
-          const targetUrl = `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(url)}`;
+          console.log(`[Supadata] Fetching transcript for ${targetVideoId} using key ending in ...${apiKey.slice(-6)}`);
+          const targetUrl = `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${targetVideoId}`)}`;
           const res = await fetch(targetUrl, {
             headers: {
               "x-api-key": apiKey,
@@ -135,7 +251,7 @@ export async function GET(request: Request) {
                 duration: item.duration || 0,
               }));
               fetchedViaSupadata = true;
-              console.log(`[Supadata] Successfully fetched transcript for ${videoId}.`);
+              console.log(`[Supadata] Successfully fetched transcript for ${targetVideoId}.`);
               break;
             }
           } else {
@@ -150,9 +266,9 @@ export async function GET(request: Request) {
 
     // Fallback: If in production and Supadata failed, try the local scraper via proxy
     if (!fetchedViaSupadata && !fetchedLocally) {
-      console.log(`[Production Scraper] Running scraper fallback for ${videoId}...`);
+      console.log(`[Production Scraper] Running scraper fallback for ${targetVideoId}...`);
       const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
-      transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
+      transcript = await YoutubeTranscript.fetchTranscript(targetVideoId, config);
     }
 
     if (checkOnly) {
@@ -166,7 +282,7 @@ export async function GET(request: Request) {
     });
 
     if (needsTranslation) {
-      console.log(`[Translation] Translating transcript for video ${videoId} to English...`);
+      console.log(`[Translation] Translating transcript for video ${targetVideoId} to English...`);
       transcript = await translateTranscript(transcript);
     }
 

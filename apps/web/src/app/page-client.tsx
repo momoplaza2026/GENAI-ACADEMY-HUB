@@ -270,6 +270,14 @@ export default function Home() {
       setHasCopiedText(false);
     }
 
+    if (doc?.kind === "course") {
+      setCompareMode(false);
+      setLeftDoc(doc);
+      setRightDoc(null);
+      setMobileTab("viewer");
+      return;
+    }
+
     if (compareMode) {
       if (!leftDoc) {
         setLeftDoc(doc);
@@ -373,7 +381,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] md:h-screen overflow-hidden bg-background">
+    <div className="flex flex-col h-[100dvh] min-[1100px]:h-screen overflow-hidden bg-background">
       <Header
         papersCount={papers.length}
         coursesCount={courses.length}
@@ -382,7 +390,7 @@ export default function Home() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Knowledge & Media Radar */}
-        <div className={`w-full md:w-[320px] lg:w-[400px] border-r border-border shrink-0 flex-col ${mobileTab === 'library' ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`w-full min-[1100px]:w-[320px] lg:w-[400px] border-r border-border shrink-0 flex-col ${mobileTab === 'library' ? 'flex' : 'hidden min-[1100px]:flex'}`}>
         <RadarSidebar
           filter={filter}
           setFilter={setFilter}
@@ -400,15 +408,15 @@ export default function Home() {
       </div>
 
       {/* Middle Column: Active Document Viewer */}
-      <div className={`flex-1 flex-col relative overflow-hidden ${mobileTab === 'viewer' ? 'flex' : 'hidden md:flex'}`}>
-        <div className="h-14 border-b border-border flex items-center justify-between px-3 md:px-4 shrink-0 bg-card/50 backdrop-blur-sm z-10 gap-2 relative">
+      <div className={`flex-1 flex-col relative overflow-hidden ${mobileTab === 'viewer' ? 'flex' : 'hidden min-[1100px]:flex'}`}>
+        <div className="h-14 border-b border-border flex items-center justify-between px-3 min-[1100px]:px-4 shrink-0 bg-card/50 backdrop-blur-sm z-10 gap-2 relative">
           {/* Left/Main Side: Title & Status */}
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-semibold tracking-tight text-xs sm:text-sm md:text-base truncate">
+            <h1 className="font-semibold tracking-tight text-xs sm:text-sm min-[1100px]:text-base truncate">
               {compareMode ? "Compare Documents" : "Active Document"}
             </h1>
             {compareMode && (
-              <span className="text-[10px] md:text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">
+              <span className="text-[10px] min-[1100px]:text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">
                 {!leftDoc
                   ? "Select 1st"
                   : !rightDoc
@@ -419,10 +427,10 @@ export default function Home() {
           </div>
 
           {/* Right Side Controls */}
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 min-[1100px]:gap-2 shrink-0">
             {/* Desktop View Buttons: Hidden on Mobile */}
             {!compareMode && activePaper && (
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden min-[1100px]:flex items-center gap-2">
                 <button
                   onClick={handleReadCopiedText}
                   disabled={!isPdfLoaded}
@@ -475,7 +483,7 @@ export default function Home() {
               <button
                 onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
                 disabled={!isPdfLoaded}
-                className={`flex md:hidden items-center justify-center p-2 rounded-md transition-all border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex min-[1100px]:hidden items-center justify-center p-2 rounded-md transition-all border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                   isActionsMenuOpen 
                     ? "bg-primary text-primary-foreground border-primary" 
                     : "bg-muted/30 text-muted-foreground hover:text-foreground border-border/50"
@@ -490,7 +498,7 @@ export default function Home() {
             {compareMode && leftDoc && rightDoc && (
               <button
                 onClick={() => setIsComparisonModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] md:text-xs font-medium bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-md shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40 transition-all hover:scale-105"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] min-[1100px]:text-xs font-medium bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-md shadow-fuchsia-500/20 hover:shadow-fuchsia-500/40 transition-all hover:scale-105"
               >
                 <span className="hidden sm:inline">View Comparison Report</span>
                 <span className="sm:hidden">Report</span>
@@ -503,27 +511,29 @@ export default function Home() {
                   setLeftDoc(null);
                   setRightDoc(null);
                 }}
-                className="px-2.5 py-1.5 rounded-md text-[11px] md:text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                className="px-2.5 py-1.5 rounded-md text-[11px] min-[1100px]:text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
               >
                 Clear
               </button>
             )}
             
-            <button
-              onClick={() => {
-                setCompareMode(!compareMode);
-                if (!compareMode) {
-                  setRightDoc(null);
-                }
-              }}
-              className={`px-2.5 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all ${
-                compareMode
-                  ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40"
-                  : "bg-gradient-to-r from-violet-600 to-blue-500 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105"
-              }`}
-            >
-              {compareMode ? "✕ Exit Compare" : "⇔ Compare Mode"}
-            </button>
+            {(!leftDoc || leftDoc.kind === "paper") && (
+              <button
+                onClick={() => {
+                  setCompareMode(!compareMode);
+                  if (!compareMode) {
+                    setRightDoc(null);
+                  }
+                }}
+                className={`px-2.5 py-1.5 rounded-md text-xs min-[1100px]:text-sm font-medium transition-all ${
+                  compareMode
+                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40"
+                    : "bg-gradient-to-r from-violet-600 to-blue-500 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105"
+                }`}
+              >
+                {compareMode ? "✕ Exit Compare" : "⇔ Compare Mode"}
+              </button>
+            )}
           </div>
 
           {/* Mobile Actions Dropdown Overlay (rendered relative to header bounds) */}
@@ -533,7 +543,7 @@ export default function Home() {
                 className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" 
                 onClick={() => setIsActionsMenuOpen(false)}
               />
-              <div className="absolute right-3 top-[52px] w-56 bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-left animate-in fade-in slide-in-from-top-2 duration-200 md:hidden">
+              <div className="absolute right-3 top-[52px] w-56 bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-left animate-in fade-in slide-in-from-top-2 duration-200 min-[1100px]:hidden">
                 <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 mb-1">
                   Audio & PDF Actions
                 </div>
@@ -608,7 +618,7 @@ export default function Home() {
       </div>
 
       {/* Right Column: Audio & Insights / Comparison Results */}
-      <div className={`w-full md:w-[320px] border-l border-border shrink-0 bg-card flex-col ${mobileTab === 'insights' ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`w-full min-[1100px]:w-[320px] border-l border-border shrink-0 bg-card flex-col ${mobileTab === 'insights' ? 'flex' : 'hidden min-[1100px]:flex'}`}>
         <AudioDeck />
         <div className="flex-1 p-5 overflow-y-auto">
 
@@ -931,7 +941,7 @@ export default function Home() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden flex border-t border-border bg-card shrink-0 h-16 pb-safe">
+      <div className="min-[1100px]:hidden flex border-t border-border bg-card shrink-0 h-16 pb-safe">
         <button
           onClick={() => setMobileTab("library")}
           className={`flex-1 flex flex-col items-center justify-center gap-1 ${mobileTab === "library" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}

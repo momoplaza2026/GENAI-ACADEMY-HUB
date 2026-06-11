@@ -78,16 +78,6 @@ export function Header({
             AI Articles
           </Link>
           <Link
-            href="/about"
-            className={`transition-colors hover:text-foreground relative py-1 ${
-              isLinkActive("/about") 
-                ? "text-slate-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gradient-to-r after:from-violet-400 after:to-cyan-400" 
-                : ""
-            }`}
-          >
-            About
-          </Link>
-          <Link
             href="/ppt-maker"
             className={`transition-colors hover:text-foreground relative py-1 ${
               isLinkActive("/ppt-maker") 
@@ -96,6 +86,26 @@ export function Header({
             }`}
           >
             AI PPT Maker
+          </Link>
+          <Link
+            href="/notes"
+            className={`transition-colors hover:text-foreground relative py-1 ${
+              isLinkActive("/notes") 
+                ? "text-slate-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gradient-to-r after:from-violet-400 after:to-cyan-400" 
+                : ""
+            }`}
+          >
+            Share Notes
+          </Link>
+          <Link
+            href="/about"
+            className={`transition-colors hover:text-foreground relative py-1 ${
+              isLinkActive("/about") 
+                ? "text-slate-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gradient-to-r after:from-violet-400 after:to-cyan-400" 
+                : ""
+            }`}
+          >
+            About
           </Link>
           <Link
             href="/contact"
@@ -159,15 +169,6 @@ export function Header({
                 AI Articles
               </Link>
               <Link 
-                href="/about" 
-                onClick={() => setIsMenuOpen(false)}
-                className={`text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-slate-900 ${
-                  isLinkActive("/about") ? "text-slate-100 bg-slate-900/50" : "text-slate-400 hover:text-foreground"
-                }`}
-              >
-                About
-              </Link>
-              <Link 
                 href="/ppt-maker" 
                 onClick={() => setIsMenuOpen(false)}
                 className={`text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-slate-900 ${
@@ -175,6 +176,24 @@ export function Header({
                 }`}
               >
                 AI PPT Maker
+              </Link>
+              <Link 
+                href="/notes" 
+                onClick={() => setIsMenuOpen(false)}
+                className={`text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-slate-900 ${
+                  isLinkActive("/notes") ? "text-slate-100 bg-slate-900/50" : "text-slate-400 hover:text-foreground"
+                }`}
+              >
+                Share Notes
+              </Link>
+              <Link 
+                href="/about" 
+                onClick={() => setIsMenuOpen(false)}
+                className={`text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-slate-900 ${
+                  isLinkActive("/about") ? "text-slate-100 bg-slate-900/50" : "text-slate-400 hover:text-foreground"
+                }`}
+              >
+                About
               </Link>
               <Link 
                 href="/contact" 

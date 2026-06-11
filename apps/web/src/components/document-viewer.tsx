@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { FileText, ExternalLink, Download, ArrowLeftRight, Maximize, Minimize, ListTree, Loader2, ChevronDown, ChevronRight, Volume2, Presentation, BookOpen, Network, Sparkles } from "lucide-react";
+import { FileText, ExternalLink, Download, ArrowLeftRight, Maximize, Minimize, ListTree, Loader2, ChevronDown, ChevronRight, Volume2, Presentation, BookOpen, Network, Sparkles, Search, Check } from "lucide-react";
 import { useAudio } from "@/components/audio-provider";
 import { PdfLoader } from "@/components/pdf-loader";
 import type { SelectedDocument } from "@/app/page-client";
@@ -38,7 +38,7 @@ export function DocumentViewer({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1100);
       setIsNarrowMobile(window.innerWidth < 450);
     };
     handleResize();
@@ -79,6 +79,26 @@ export function DocumentViewer({
   const [isExtractable, setIsExtractable] = useState<boolean | null>(null); // null = checking, true = yes, false = no
   const [extractionReason, setExtractionReason] = useState<"ip_blocked" | "not_available" | null>(null);
 
+  // Playlist states
+  const [playlistVideos, setPlaylistVideos] = useState<{ id: string; title: string }[]>([]);
+  const [selectedPlaylistVideoId, setSelectedPlaylistVideoId] = useState<string | null>(null);
+  const [loadingPlaylistVideos, setLoadingPlaylistVideos] = useState(false);
+  const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState("");
+  const playlistDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (playlistDropdownRef.current && !playlistDropdownRef.current.contains(event.target as Node)) {
+        setIsPlaylistDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     // Reset transcript state when document changes
     setTranscriptData(null);
@@ -110,6 +130,27 @@ export function DocumentViewer({
     }
 
     if (doc && doc.kind === "course" && doc.course && doc.course.platform === "YouTube") {
+      setIsPlaylistDropdownOpen(false);
+      setPlaylistSearchQuery("");
+
+      const playlistId = getYoutubePlaylistId(doc.course.url);
+      if (playlistId) {
+        setLoadingPlaylistVideos(true);
+        fetch(`/api/video-summary?url=${encodeURIComponent(doc.course.url)}&playlist=true`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.videos && data.videos.length > 0) {
+              setPlaylistVideos(data.videos);
+              setSelectedPlaylistVideoId(data.videos[0].id);
+            }
+          })
+          .catch((err) => console.error("Failed to fetch playlist videos:", err))
+          .finally(() => setLoadingPlaylistVideos(false));
+      } else {
+        setPlaylistVideos([]);
+        setSelectedPlaylistVideoId(null);
+      }
+
       const checkExtractable = async () => {
         try {
           const res = await fetch(`/api/video-summary?url=${encodeURIComponent(doc.course.url)}&check=true`);
@@ -438,7 +479,7 @@ export function DocumentViewer({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          <div className="grid grid-cols-1 min-[1100px]:grid-cols-2 gap-4 mt-8">
             {/* Guide Cards */}
             <div className="p-5 rounded-2xl bg-slate-950/85 border border-indigo-500/30 hover:border-indigo-400/60 shadow-xl transition-all duration-300 group/card h-full flex flex-col">
               <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-4 transition-transform group-hover/card:scale-110">
@@ -638,9 +679,9 @@ export function DocumentViewer({
                       Video Content & Topics
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {getYoutubeVideoId(c.url)
-                        ? "Extract structured topics and transcript directly from the video."
-                        : "Topics extraction is available for individual videos."}
+                      {getYoutubePlaylistId(c.url)
+                        ? "Choose a video from the playlist below to extract structured topics."
+                        : "Extract structured topics and transcript directly from the video."}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -662,7 +703,13 @@ export function DocumentViewer({
                     ) : isExtractable === true ? (
                       !transcriptData && !loadingTranscript && (
                         <button
-                          onClick={() => fetchTranscript(c.url)}
+                          onClick={() => {
+                            const playlistId = getYoutubePlaylistId(c.url);
+                            const targetUrl = playlistId && selectedPlaylistVideoId
+                              ? `https://www.youtube.com/watch?v=${selectedPlaylistVideoId}`
+                              : c.url;
+                            fetchTranscript(targetUrl);
+                          }}
                           className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary font-medium rounded-lg text-sm transition-colors"
                         >
                           Extract Topics
@@ -684,6 +731,98 @@ export function DocumentViewer({
                     )}
                   </div>
                 </div>
+
+                {loadingPlaylistVideos && (
+                  <div className="mb-4 text-xs text-muted-foreground animate-pulse flex items-center gap-1.5 bg-muted/10 border border-border/40 p-3.5 rounded-xl">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    Loading playlist videos...
+                  </div>
+                )}
+
+                {!loadingPlaylistVideos && playlistVideos.length > 0 && (() => {
+                  const activeVideo = playlistVideos.find(v => v.id === selectedPlaylistVideoId) || playlistVideos[0];
+                  const filtered = playlistVideos.filter(v =>
+                    v.title.toLowerCase().includes(playlistSearchQuery.toLowerCase())
+                  );
+
+                  return (
+                    <div className="mb-6 bg-muted/20 border border-border/50 p-4 rounded-xl flex flex-col gap-2.5 relative z-30" ref={playlistDropdownRef}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          Select Video from Playlist
+                        </span>
+                        <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-mono font-medium">
+                          {playlistVideos.length} videos
+                        </span>
+                      </div>
+
+                      <div className="relative">
+                        {/* Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsPlaylistDropdownOpen(!isPlaylistDropdownOpen)}
+                          className="w-full bg-slate-900 border border-border hover:border-primary/50 text-foreground rounded-lg px-3.5 py-2.5 text-xs focus:outline-none transition-all flex items-center justify-between gap-3 text-left font-medium select-none shadow-sm hover:shadow"
+                        >
+                          <span className="truncate flex-1 pr-2">
+                            {activeVideo ? activeVideo.title : "Select a video..."}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${isPlaylistDropdownOpen ? "rotate-180 text-primary" : ""}`} />
+                        </button>
+
+                        {/* Floating Dropdown Card */}
+                        {isPlaylistDropdownOpen && (
+                          <div className="absolute left-0 right-0 mt-1.5 bg-slate-950 border border-border/80 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                            {/* Search bar inside dropdown */}
+                            <div className="relative p-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                              <input
+                                type="text"
+                                placeholder="Search video title..."
+                                value={playlistSearchQuery}
+                                onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                                className="w-full bg-muted/30 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-normal placeholder:text-muted-foreground/50"
+                                onClick={(e) => e.stopPropagation()} // Prevent closing dropdown on input click
+                              />
+                            </div>
+
+                            {/* Scrollable list cap */}
+                            <div className="max-h-60 overflow-y-auto space-y-0.5 pr-1 scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/25">
+                              {filtered.length === 0 ? (
+                                <div className="p-4 text-center text-xs text-muted-foreground">
+                                  No videos found
+                                </div>
+                              ) : (
+                                filtered.map((video) => {
+                                  const isSelected = video.id === selectedPlaylistVideoId;
+                                  return (
+                                    <button
+                                      key={video.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedPlaylistVideoId(video.id);
+                                        setTranscriptData(null);
+                                        setTranscriptError(null);
+                                        setIsPlaylistDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-all flex items-center justify-between gap-3 ${
+                                        isSelected
+                                          ? "bg-primary/15 text-primary font-semibold"
+                                          : "text-muted-foreground hover:bg-muted/30 hover:text-foreground font-medium"
+                                      }`}
+                                    >
+                                      <span className="truncate">{video.title}</span>
+                                      {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {loadingTranscript && (
                   <div className="flex flex-col items-center justify-center py-8">
