@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { customFetch } from "@/lib/proxy-fetch";
 
 // Source servers often provide HTML versions of papers at https://arxiv.org/html/{id}
 // We fetch the HTML and strip tags to get plain text — no external PDF library needed.
@@ -36,7 +37,8 @@ export async function GET(request: Request) {
   const htmlUrl = `https://arxiv.org/html/${safeId}`;
 
   try {
-    const response = await fetch(htmlUrl, {
+    const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
+    const response = await fetchFn(htmlUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },
@@ -53,7 +55,7 @@ export async function GET(request: Request) {
 
     // Fallback: fetch the abstract page and extract the abstract text
     const abstractUrl = `https://arxiv.org/abs/${safeId}`;
-    const absResponse = await fetch(abstractUrl, {
+    const absResponse = await fetchFn(abstractUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },

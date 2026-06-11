@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { customFetch } from "@/lib/proxy-fetch";
 
 // Helper to resolve arXiv relative image sources to absolute URLs
 function resolveArxivImageUrl(paperId: string, src: string): string {
@@ -47,7 +48,8 @@ export async function GET(request: Request) {
   const htmlUrl = `https://arxiv.org/html/${safeId}`;
 
   try {
-    const response = await fetch(htmlUrl, {
+    const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
+    const response = await fetchFn(htmlUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },

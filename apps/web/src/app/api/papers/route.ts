@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ResearchPaper } from "@/lib/types";
+import { customFetch } from "@/lib/proxy-fetch";
 
 // API categories for AI/ML research
 // cs.LG = Machine Learning, cs.CL = Computation & Language (NLP/LLMs),
@@ -74,18 +75,19 @@ export async function GET(request: Request) {
 
   if (query) {
     // Search by keyword
-    apiUrl = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}+AND+(cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.AI)&sortBy=relevance&max_results=${maxResults}&start=${start}`;
+    apiUrl = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}+AND+(cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.AI)&sortBy=relevance&max_results=${maxResults}&start=${start}`;
   } else {
     // Latest papers
-    apiUrl = `http://export.arxiv.org/api/query?search_query=cat:${category}&sortBy=submittedDate&sortOrder=descending&max_results=${maxResults}&start=${start}`;
+    apiUrl = `https://export.arxiv.org/api/query?search_query=cat:${category}&sortBy=submittedDate&sortOrder=descending&max_results=${maxResults}&start=${start}`;
   }
 
   try {
-    const response = await fetch(apiUrl, {
+    const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
+    const response = await fetchFn(apiUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },
-      next: { revalidate: 300 }, // Cache for 5 minutes
+      ...(!process.env.PROXY_URL ? { next: { revalidate: 300 } } : {}),
     });
 
     if (!response.ok) {
@@ -95,7 +97,9 @@ export async function GET(request: Request) {
     const xmlData = await response.text();
     const papers = parsePaperXml(xmlData);
 
-    return NextResponse.json({ papers, count: papers.length });
+    const nextResponse = NextResponse.json({ papers, count: papers.length });
+    nextResponse.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=59");
+    return nextResponse;
   } catch (error) {
     console.error("Error fetching papers:", error);
     return NextResponse.json(

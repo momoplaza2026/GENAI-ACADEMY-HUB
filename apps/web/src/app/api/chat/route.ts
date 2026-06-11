@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { customFetch } from "@/lib/proxy-fetch";
 import { GoogleGenAI } from "@google/genai";
 import { extractAnswer, extractSummary, extractOneLiner } from "@/lib/nlp";
 import { getOrIngestPaper, searchRAG } from "@/lib/rag";
@@ -24,9 +25,10 @@ async function stripHtml(html: string): Promise<string> {
 async function fetchPaperText(paperId: string): Promise<string> {
   const safeId = paperId.replace(/[^a-zA-Z0-9._\-\/]/g, "");
   const htmlUrl = `https://arxiv.org/html/${safeId}`;
+  const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
   
   try {
-    const response = await fetch(htmlUrl, {
+    const response = await fetchFn(htmlUrl, {
       headers: { "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)" },
     });
     if (response.ok) {
@@ -40,11 +42,11 @@ async function fetchPaperText(paperId: string): Promise<string> {
   
   const abstractUrl = `https://arxiv.org/abs/${safeId}`;
   try {
-    const absResponse = await fetch(abstractUrl, {
+    const response = await fetchFn(abstractUrl, {
       headers: { "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)" },
     });
-    if (absResponse.ok) {
-      const absHtml = await absResponse.text();
+    if (response.ok) {
+      const absHtml = await response.text();
       const abstractMatch = absHtml.match(/<blockquote class="abstract[^"]*">([\s\S]*?)<\/blockquote>/i);
       const titleMatch = absHtml.match(/<h1 class="title[^"]*">([\s\S]*?)<\/h1>/i);
       

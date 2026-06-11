@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { customFetch } from "@/lib/proxy-fetch";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,7 +18,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(imageUrl, {
+    const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
+    const response = await fetchFn(imageUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },

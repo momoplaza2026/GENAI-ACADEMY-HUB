@@ -2,84 +2,7 @@ import { NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
 import { getYoutubeVideoId } from "@/lib/youtube";
 import https from "https";
-import http from "http";
-import { HttpsProxyAgent } from "https-proxy-agent";
-
-// Custom fetch implementation supporting HttpsProxyAgent
-function customFetch(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-  redirectCount = 0
-): Promise<Response> {
-  if (redirectCount > 5) {
-    return Promise.reject(new Error("Too many redirects"));
-  }
-  const proxyUrl = process.env.PROXY_URL;
-  const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
-
-  const urlString = typeof input === "string" 
-    ? input 
-    : (input instanceof URL 
-      ? input.toString() 
-      : (input as any).url || "");
-
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(urlString);
-    const reqOptions: https.RequestOptions = {
-      method: init?.method || "GET",
-      headers: (init?.headers as any) || {},
-      agent: agent,
-    };
-
-    const isSecure = parsedUrl.protocol === "https:";
-    const requestFn = isSecure ? https.request : http.request;
-
-    const req = requestFn(urlString, reqOptions, (res) => {
-      // Handle redirects
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        const redirectUrl = new URL(res.headers.location, urlString).toString();
-        resolve(customFetch(redirectUrl, init, redirectCount + 1));
-        return;
-      }
-
-      const chunks: any[] = [];
-      res.on("data", (chunk) => chunks.push(chunk));
-      res.on("end", () => {
-        const bodyBuffer = Buffer.concat(chunks);
-        const textContent = bodyBuffer.toString("utf8");
-
-        const responseObj = {
-          ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
-          status: res.statusCode || 200,
-          statusText: res.statusMessage || "",
-          headers: new Headers(res.headers as any),
-          text: async () => textContent,
-          json: async () => JSON.parse(textContent),
-          clone: () => responseObj,
-          body: null,
-          bodyUsed: true,
-          arrayBuffer: async () => bodyBuffer.buffer.slice(bodyBuffer.byteOffset, bodyBuffer.byteOffset + bodyBuffer.byteLength),
-          blob: async () => new Blob([bodyBuffer]),
-          formData: async () => new FormData(),
-          type: "basic" as ResponseType,
-          url: urlString,
-          redirected: redirectCount > 0,
-        };
-
-        resolve(responseObj as unknown as Response);
-      });
-    });
-
-    req.on("error", (err) => {
-      reject(err);
-    });
-
-    if (init?.body) {
-      req.write(init.body as any);
-    }
-    req.end();
-  });
-}
+import { customFetch } from "@/lib/proxy-fetch";
 
 function translateText(text: string, targetLang = 'en'): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -168,8 +91,43 @@ export async function GET(request: Request) {
   }
 
   try {
-    const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
-    let transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
+    let transcript: any[] = [];
+    let fetchedViaSupadata = false;
+
+    if (process.env.SUPADATA_API_KEY) {
+      try {
+        console.log(`[Supadata] Fetching transcript for ${videoId}...`);
+        const targetUrl = `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(url)}`;
+        const res = await fetch(targetUrl, {
+          headers: {
+            "x-api-key": process.env.SUPADATA_API_KEY,
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.content)) {
+            transcript = data.content.map((item: any) => ({
+              text: item.text,
+              offset: item.offset || 0,
+              duration: item.duration || 0,
+            }));
+            fetchedViaSupadata = true;
+            console.log(`[Supadata] Successfully fetched transcript for ${videoId}.`);
+          }
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          console.warn("[Supadata] API request failed, falling back to local scraping:", errorData.error || res.status);
+        }
+      } catch (e: any) {
+        console.warn("[Supadata] Error, falling back to local scraping:", e.message);
+      }
+    }
+
+    if (!fetchedViaSupadata) {
+      const config = process.env.PROXY_URL ? { fetch: customFetch } : undefined;
+      transcript = await YoutubeTranscript.fetchTranscript(videoId, config);
+    }
 
     if (checkOnly) {
       return NextResponse.json({ extractable: Array.isArray(transcript) && transcript.length > 0 });

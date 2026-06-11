@@ -674,7 +674,7 @@ export function DocumentViewer({
                           <span>⚠️</span> Blocked by YouTube (Production IP)
                         </span>
                         <span className="text-[10px] text-muted-foreground text-right max-w-[280px]">
-                          Configure a <code>PROXY_URL</code> in Vercel to bypass.
+                          Configure a <code>PROXY_URL</code> or <code>SUPADATA_API_KEY</code> in Vercel to bypass.
                         </span>
                       </div>
                     ) : (

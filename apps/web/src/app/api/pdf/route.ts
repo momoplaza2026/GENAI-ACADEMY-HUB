@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { customFetch } from "@/lib/proxy-fetch";
 
 // This API route proxies PDFs through our own server.
 // External sources often block iframe embedding via X-Frame-Options headers,
@@ -25,7 +26,8 @@ async function handlePdfRequest(request: Request) {
   const pdfUrl = `https://arxiv.org/pdf/${safeId}`;
 
   try {
-    const response = await fetch(pdfUrl, {
+    const fetchFn = process.env.PROXY_URL ? customFetch : fetch;
+    const response = await fetchFn(pdfUrl, {
       headers: {
         "User-Agent": "GenAI-Academy-Hub/1.0 (educational-platform)",
       },
