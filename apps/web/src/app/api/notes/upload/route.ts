@@ -14,6 +14,16 @@ const ALLOWED_MIME_TYPES = [
   "application/pdf",
 ];
 
+export async function GET() {
+  const isVercel = !!(process.env.VERCEL || process.env.LAMBDA_TASK_ROOT || process.env.NETLIFY);
+  const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
+  return NextResponse.json({
+    isVercel,
+    hasBlobToken,
+    maxSize: isVercel && !hasBlobToken ? 1.5 * 1024 * 1024 : 5 * 1024 * 1024,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();

@@ -194,6 +194,9 @@ export default function NotesClientPage() {
   const [attachment, setAttachment] = useState<NoteAttachment | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [maxUploadSize, setMaxUploadSize] = useState<number>(5 * 1024 * 1024); // default 5MB
+  const [isVercelProd, setIsVercelProd] = useState<boolean>(false);
+  const [hasVercelBlob, setHasVercelBlob] = useState<boolean>(false);
 
   // Viewer State
   const [isViewMode, setIsViewMode] = useState(false);
@@ -221,6 +224,21 @@ export default function NotesClientPage() {
 
   useEffect(() => {
     setMounted(true);
+
+    const checkUploadConfig = async () => {
+      try {
+        const res = await fetch("/api/notes/upload");
+        if (res.ok) {
+          const config = await res.json();
+          setMaxUploadSize(config.maxSize);
+          setIsVercelProd(config.isVercel);
+          setHasVercelBlob(config.hasBlobToken);
+        }
+      } catch (err) {
+        console.warn("Failed to check upload configuration", err);
+      }
+    };
+    checkUploadConfig();
 
     const handleUrlChange = () => {
       // Check query param first
@@ -811,9 +829,17 @@ export default function NotesClientPage() {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           
-                          // Validate client-side size limit (5MB)
-                          if (file.size > 5 * 1024 * 1024) {
-                            setUploadError("File size exceeds 5MB limit.");
+                          // Validate client-side size limit dynamically based on server storage configuration
+                          if (file.size > maxUploadSize) {
+                            if (isVercelProd && !hasVercelBlob) {
+                              setUploadError(
+                                "File size exceeds the 1.5MB limit for Vercel production fallback. " +
+                                "To upload larger files (up to 5MB), please configure Vercel Blob Storage."
+                              );
+                            } else {
+                              const limitMB = maxUploadSize / (1024 * 1024);
+                              setUploadError(`File size exceeds the ${limitMB}MB limit.`);
+                            }
                             return;
                           }
                           
@@ -862,7 +888,9 @@ export default function NotesClientPage() {
                         <div className="flex flex-col items-center gap-2 text-center text-slate-400 pointer-events-none">
                           <UploadCloud className="w-8 h-8 text-indigo-400" />
                           <span className="text-xs font-semibold">Drag & drop or click to upload</span>
-                          <span className="text-[10px] text-slate-500">Supports JPG, PNG, WEBP, GIF, or PDF (Max 5MB)</span>
+                          <span className="text-[10px] text-slate-500">
+                            Supports JPG, PNG, WEBP, GIF, or PDF (Max {maxUploadSize === 5 * 1024 * 1024 ? "5MB" : "1.5MB"})
+                          </span>
                         </div>
                       )}
                     </div>
